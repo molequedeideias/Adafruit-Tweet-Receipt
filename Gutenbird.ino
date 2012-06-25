@@ -20,6 +20,8 @@ http://www.adafruit.com/products/597 Mini Thermal Receipt Printer
 http://www.adafruit.com/products/600 Printer starter pack
 */
 
+/*Modificado por Nilton Lessa para o projeto do Realejo de Ideias */
+
 #include <SPI.h>
 #include <Ethernet.h>
 #include <Adafruit_Thermal.h>
@@ -44,9 +46,9 @@ byte
   sleepPos = 0, // Current "sleep throb" table position
   resultsDepth, // Used in JSON parsing
   // Ethernet MAC address is found on sticker on Ethernet shield or board:
-  mac[] = { 0x90, 0xA2, 0xDA, 0x00, 0x76, 0x09 };
+  mac[] = { 0x90, 0xA2, 0xDA, 0x00, 0xE3, 0x38 };
 IPAddress
-  ip(192,168,0,118); // Fallback address -- code will try DHCP first
+  ip(192,168,1,90); // Fallback address -- code will try DHCP first
 EthernetClient
   client;
 char
@@ -55,13 +57,14 @@ char
   // boolean operators.  See https://dev.twitter.com/docs/using-search
   // for options and syntax.  Funny characters do NOT need to be URL
   // encoded here -- the sketch takes care of that.
-  *queryString = "from:Adafruit",
+  *queryString = "from:realejodeideias",
   lastId[21],    // 18446744073709551615\0 (64-bit maxint as string)
   timeStamp[32], // WWW, DD MMM YYYY HH:MM:SS +XXXX\0
   fromUser[16],  // Max username length (15) + \0
   msgText[141],  // Max tweet length (140) + \0
   name[11],      // Temp space for name:value parsing
-  value[141];    // Temp space for name:value parsing
+  value[141],    // Temp space for name:value parsing
+  *mensagemFinal = "\nEnvie tambem sua ideia para o Realejo de Ideias!\nBasta enviar um tweet para @realejodeideias.\nHa sempre alguem, em algum lugar, que podera precisar ou colaborar!";
 PROGMEM byte
   sleepTab[] = { // "Sleep throb" brightness table (reverse for second half)
       0,   0,   0,   0,   0,   0,   0,   0,   0,   1,
@@ -99,11 +102,11 @@ void setup() {
 
   // Initialize Ethernet connection.  Request dynamic
   // IP address, fall back on fixed IP if that fails:
-  Serial.print("Initializing Ethernet...");
+  Serial.print("Inicializando Ethernet...");
   if(Ethernet.begin(mac)) {
     Serial.println("OK");
   } else {
-    Serial.print("\r\nno DHCP response, using static IP address.");
+    Serial.print("\r\nSem resposta DHCP response, usando IP estatico.");
     Ethernet.begin(mac, ip);
   }
 
@@ -131,12 +134,12 @@ void loop() {
   analogWrite(led_pin, 255);
 
   // Attempt server connection, with timeout...
-  Serial.print("Connecting to server...");
+  Serial.print("Conectando ao servidor...");
   while((client.connect(serverName, 80) == false) &&
     ((millis() - startTime) < connectTimeout));
 
   if(client.connected()) { // Success!
-    Serial.print("OK\r\nIssuing HTTP request...");
+    Serial.print("OK\r\nFazendo requisicao HTTP...");
     // URL-encode queryString to client stream:
     client.print("GET /search.json?q=");
     for(i=0; c=queryString[i]; i++) {
@@ -163,22 +166,22 @@ void loop() {
     }
     client.print(" HTTP/1.1\r\nHost: ");
     client.println(serverName);
-    client.println("Connection: close\r\n");
+    client.println("Conexao: fechar\r\n");
 
-    Serial.print("OK\r\nAwaiting results (if any)...");
+    Serial.print("OK\r\nAguardando resultados (se houver)...");
     t = millis();
     while((!client.available()) && ((millis() - t) < responseTimeout));
     if(client.available()) { // Response received?
       // Could add HTTP response header parsing here (400, etc.)
       if(client.find("\r\n\r\n")) { // Skip HTTP response header
-        Serial.println("OK\r\nProcessing results...");
+        Serial.println("OK\r\nProcessando resultados...");
         resultsDepth = 0;
         jsonParse(0, 0);
-      } else Serial.println("response not recognized.");
-    } else   Serial.println("connection timed out.");
+      } else Serial.println("response nao reconhecida.");
+    } else   Serial.println("conexao expirada.");
     client.stop();
   } else { // Couldn't contact server
-    Serial.println("failed");
+    Serial.println("nao foi possivel contactar server.Falhou");
   }
 
   // Sometimes network access & printing occurrs so quickly, the steady-on
@@ -191,11 +194,11 @@ void loop() {
   // access, parsing, printing and LED pause above.
   t = millis() - startTime;
   if(t < pollingInterval) {
-    Serial.print("Pausing...");
+    Serial.print("Pausando...");
     sleepPos = sizeof(sleepTab); // Resume following brightest position
     TIMSK1 |= _BV(TOIE1); // Re-enable Timer1 interrupt for sleep throb
     delay(pollingInterval - t);
-    Serial.println("done");
+    Serial.println("feito");
   }
 }
 
@@ -226,17 +229,23 @@ boolean jsonParse(int depth, byte endChar) {
         printer.print(timeStamp);
         for(i=strlen(timeStamp); i<32; i++) printer.write(' ');
         printer.underlineOff();
+        printer.boldOn();
+        printer.setSize('M');
         printer.println(msgText);
+        printer.boldOff();
+        printer.setSize('S');
+        printer.println(mensagemFinal);
         printer.feed(3);
         printer.sleep();
 
         // Dump to serial console as well
-        Serial.print("User: ");
+        Serial.print("Usuario: ");
         Serial.println(fromUser);
-        Serial.print("Text: ");
+        Serial.print("Texto: ");
         Serial.println(msgText);
-        Serial.print("Time: ");
+        Serial.print("Quando: ");
         Serial.println(timeStamp);
+        Serial.println(mensagemFinal);
 
         // Clear strings for next object
         timeStamp[0] = fromUser[0] = msgText[0] = 0;
