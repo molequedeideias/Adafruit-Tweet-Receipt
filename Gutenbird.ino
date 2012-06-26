@@ -64,7 +64,7 @@ char
   msgText[141],  // Max tweet length (140) + \0
   name[11],      // Temp space for name:value parsing
   value[141],    // Temp space for name:value parsing
-  *mensagemFinal = "\nEnvie tambem sua ideia para o Realejo de Ideias!\nBasta enviar um tweet para @realejodeideias.\nHa sempre alguem, em algum lugar, que podera precisar ou colaborar!";
+  *mensagemFinal = "Saiba mais sobre o realejo de ideias em http://goo.gl/G3iJA";
 PROGMEM byte
   sleepTab[] = { // "Sleep throb" brightness table (reverse for second half)
       0,   0,   0,   0,   0,   0,   0,   0,   0,   1,
@@ -166,7 +166,7 @@ void loop() {
     }
     client.print(" HTTP/1.1\r\nHost: ");
     client.println(serverName);
-    client.println("Conexao: fechar\r\n");
+    client.println("Connection: close\r\n");
 
     Serial.print("OK\r\nAguardando resultados (se houver)...");
     t = millis();
@@ -222,6 +222,7 @@ boolean jsonParse(int depth, byte endChar) {
         printer.wake();
         printer.inverseOn();
         printer.write(' ');
+        printer.print("Enviado por: ");
         printer.print(fromUser);
         for(i=strlen(fromUser); i<31; i++) printer.write(' ');
         printer.inverseOff();
@@ -335,7 +336,10 @@ int unidecode(byte len) {
     if     ((c >= '0') && (c <= '9')) v =      c - '0';
     else if((c >= 'A') && (c <= 'F')) v = 10 + c - 'A';
     else if((c >= 'a') && (c <= 'f')) v = 10 + c - 'a';
-    else return '-'; // garbage
+    else {
+    Serial.print("Caracter nao mapeado = " + c);
+    return '-'; // garbage
+    }
     result = (result << 4) | v;
   }
 
