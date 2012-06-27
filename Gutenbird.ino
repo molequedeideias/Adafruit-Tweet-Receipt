@@ -28,7 +28,7 @@ http://www.adafruit.com/products/600 Printer starter pack
 #include <SoftwareSerial.h>
 
 // Global stuff --------------------------------------------------------------
-
+boolean debug     = true;
 const int
   led_pin         = 3,           // To status LED (hardware PWM pin)
   // Pin 4 is skipped -- this is the Card Select line for Arduino Ethernet!
@@ -172,6 +172,7 @@ void loop() {
     t = millis();
     while((!client.available()) && ((millis() - t) < responseTimeout));
     if(client.available()) { // Response received?
+    
       // Could add HTTP response header parsing here (400, etc.)
       if(client.find("\r\n\r\n")) { // Skip HTTP response header
         Serial.println("OK\r\nProcessando resultados...");
@@ -207,12 +208,12 @@ void loop() {
 boolean jsonParse(int depth, byte endChar) {
   int     c, i;
   boolean readName = true;
-
+  if (debug) { Serial.println("Entrou no JsonParse");}
   for(;;) {
     while(isspace(c = timedRead())); // Scan past whitespace
     if(c < 0)        return false;   // Timeout
     if(c == endChar) return true;    // EOD
-
+    
     if(c == '{') { // Object follows
       if(!jsonParse(depth + 1, '}')) return false;
       if(!depth)                     return true; // End of file
@@ -310,7 +311,7 @@ boolean readString(char *dest, int maxLen) {
       else if(c == 'U') c = unidecode(8);
       // else c is unaltered -- an escaped char such as \ or "
     } // else c is a normal unescaped char
-
+    if (debug) { Serial.print(c + " ");}
     if(c < 0) return false; // Timeout
 
     // In order to properly position the client stream at the end of
