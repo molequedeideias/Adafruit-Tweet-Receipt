@@ -28,7 +28,8 @@ http://www.adafruit.com/products/600 Printer starter pack
 #include <SoftwareSerial.h>
 
 // Global stuff --------------------------------------------------------------
-
+boolean debug     = false;
+String jsonString = "";
 const int
   led_pin         = 3,           // To status LED (hardware PWM pin)
   // Pin 4 is skipped -- this is the Card Select line for Arduino Ethernet!
@@ -172,6 +173,7 @@ void loop() {
     t = millis();
     while((!client.available()) && ((millis() - t) < responseTimeout));
     if(client.available()) { // Response received?
+    
       // Could add HTTP response header parsing here (400, etc.)
       if(client.find("\r\n\r\n")) { // Skip HTTP response header
         Serial.println("OK\r\nProcessando resultados...");
@@ -207,24 +209,25 @@ void loop() {
 boolean jsonParse(int depth, byte endChar) {
   int     c, i;
   boolean readName = true;
-
+ 
   for(;;) {
     while(isspace(c = timedRead())); // Scan past whitespace
     if(c < 0)        return false;   // Timeout
     if(c == endChar) return true;    // EOD
-
+    
     if(c == '{') { // Object follows
       if(!jsonParse(depth + 1, '}')) return false;
       if(!depth)                     return true; // End of file
       if(depth == resultsDepth) { // End of object in results list
 
         // Output to printer
+        
         printer.wake();
         printer.inverseOn();
         printer.write(' ');
-        printer.print("Enviado por: ");
+        printer.print("Enviado por: ");// sao 13 caracteres
         printer.print(fromUser);
-        for(i=strlen(fromUser); i<31; i++) printer.write(' ');
+        for(i=strlen(fromUser)+13; i<31; i++) printer.write(' ');
         printer.inverseOff();
         printer.underlineOn();
         printer.print(timeStamp);
@@ -240,6 +243,12 @@ boolean jsonParse(int depth, byte endChar) {
         printer.sleep();
 
         // Dump to serial console as well
+        if (debug) {
+          Serial.println("depth: "+depth);
+          Serial.print("Json: ");
+          Serial.println(jsonString);
+          jsonString = "";
+        }
         Serial.print("Usuario: ");
         Serial.println(fromUser);
         Serial.print("Texto: ");
@@ -310,7 +319,10 @@ boolean readString(char *dest, int maxLen) {
       else if(c == 'U') c = unidecode(8);
       // else c is unaltered -- an escaped char such as \ or "
     } // else c is a normal unescaped char
-
+    if (debug) { 
+    //Serial.print(c + " ");
+    jsonString+= (unidecode(c) + " ");
+    }
     if(c < 0) return false; // Timeout
 
     // In order to properly position the client stream at the end of
@@ -365,6 +377,8 @@ int timedRead(void) {
 
   return client.read();  // -1 on timeout
 }
+
+
 
 // ---------------------------------------------------------------------------
 
