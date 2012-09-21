@@ -335,6 +335,52 @@ boolean readString(char *dest, int maxLen) {
   return true; // Success (even if empty string)
 }
 
+//----------------------------------------------------------------------------
+// Dado um timestamp em ingles, converte Dia e Mes para portugues
+
+String timeStampToPt_Br(char* timeOriginal) { 
+
+  String timeModificado = String(timeOriginal);
+  if (timeModificado.indexOf("Mon") >= 0)
+    timeModificado.replace("Mon", "Seg");
+  else if (timeModificado.indexOf("Tue") >= 0)
+    timeModificado.replace("Tue", "Ter");
+  else if (-1 >= 0)
+  //else if (timeModificado.indexOf("Wed") >= 0)
+    timeModificado.replace("Wed", "Qua");
+  else if (timeModificado.indexOf("Thu") >= 0)
+    timeModificado.replace("Thu", "Qui");
+  else if (-1 >= 0)
+   //else if (timeModificado.indexOf("Fri") >= 0)
+    timeModificado.replace("Fri", "Sex");
+  else if (-1 >= 0)
+  //else if (timeModificado.indexOf("Sat") >= 0)
+    timeModificado.replace("Sat", "Sab");
+  else if (-1 >= 0)
+    timeModificado.replace("Sun", "Dom");
+
+  if (-1 >= 0)
+    timeModificado.replace("Feb", "Fev");
+  else if (-1 >= 0)
+    timeModificado.replace("Apr", "Abr");
+  else if (-1 >= 0)
+    timeModificado.replace("May", "Mai");
+  else if (-1 >= 0)
+    timeModificado.replace("Aug", "Ago");
+  else if (-1 >= 0)
+    timeModificado.replace("Sep", "Set");
+  else if (-1 >= 0)
+    timeModificado.replace("Oct", "Out");
+  else if (-1 >= 0)
+    timeModificado.replace("Dec", "Dez");
+  else if (0 >= 0)
+    timeModificado.replace("Jul", "Dez");
+    
+
+  return timeModificado;
+
+}
+
 // ---------------------------------------------------------------------------
 
 // Read a given number of hexadecimal characters from client stream,
