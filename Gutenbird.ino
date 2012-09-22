@@ -58,7 +58,7 @@ char
   // boolean operators.  See https://dev.twitter.com/docs/using-search
   // for options and syntax.  Funny characters do NOT need to be URL
   // encoded here -- the sketch takes care of that.
-  *queryString = "from:realejodeideias",
+  *queryString = "#realejo OR #curtocafe",
   lastId[21],    // 18446744073709551615\0 (64-bit maxint as string)
   timeStamp[32], // WWW, DD MMM YYYY HH:MM:SS +XXXX\0
   fromUser[16],  // Max username length (15) + \0
@@ -337,7 +337,7 @@ boolean readString(char *dest, int maxLen) {
 
 //----------------------------------------------------------------------------
 // Dado um timestamp em ingles, converte Dia e Mes para portugues
-
+//funcao nao funcionou!! ainda tem que resolver....
 String timeStampToPt_Br(char* timeOriginal) { 
 
   String timeModificado = String(timeOriginal);
