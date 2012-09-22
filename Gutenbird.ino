@@ -68,7 +68,7 @@ fromUser[16],  // Max username length (15) + \0
 msgText[141],  // Max tweet length (140) + \0
 name[11],      // Temp space for name:value parsing
 value[141],    // Temp space for name:value parsing
-*mensagemFinal = "Saiba mais sobre o realejo de   ideias em http://bit.ly/realejo";
+*mensagemFinal = "Saiba mais sobre o realejo de   ideias em http://bit.ly/realejo";  //os espa'os extras no meio da string para quebrar a linha corretamente
 PROGMEM byte
 sleepTab[] = { // "Sleep throb" brightness table (reverse for second half)
   0,   0,   0,   0,   0,   0,   0,   0,   0,   1,
