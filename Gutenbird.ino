@@ -27,62 +27,65 @@ http://www.adafruit.com/products/600 Printer starter pack
 #include <Adafruit_Thermal.h>
 #include <SoftwareSerial.h>
 
+#define LED 19
+
 // Global stuff --------------------------------------------------------------
 boolean debug     = false;
 String jsonString = "";
 const int
-  led_pin         = 3,           // To status LED (hardware PWM pin)
-  // Pin 4 is skipped -- this is the Card Select line for Arduino Ethernet!
-  printer_RX_Pin  = 5,           // Printer connection: green wire
-  printer_TX_Pin  = 6,           // Printer connection: yellow wire
-  printer_Ground  = 7,           // Printer connection: black wire
-  maxTweets       = 5;           // Limit tweets printed; avoid runaway output
+led_pin         = 3,           // To status LED (hardware PWM pin)
+// Pin 4 is skipped -- this is the Card Select line for Arduino Ethernet!
+printer_RX_Pin  = 5,           // Printer connection: green wire
+printer_TX_Pin  = 6,           // Printer connection: yellow wire
+printer_Ground  = 7,           // Printer connection: black wire
+maxTweets       = 5;           // Limit tweets printed; avoid runaway output
 const unsigned long              // Time limits, expressed in milliseconds:
-  pollingInterval = 60L * 1000L, // Note: Twitter server will allow 150/hr max
-  connectTimeout  = 15L * 1000L, // Max time to retry server link
-  responseTimeout = 15L * 1000L; // Max time to wait for data from server
+pollingInterval = 60L * 1000L, // Note: Twitter server will allow 150/hr max
+connectTimeout  = 15L * 1000L, // Max time to retry server link
+responseTimeout = 15L * 1000L; // Max time to wait for data from server
 Adafruit_Thermal
-  printer(printer_RX_Pin, printer_TX_Pin);
+printer(printer_RX_Pin, printer_TX_Pin);
 byte
-  sleepPos = 0, // Current "sleep throb" table position
-  resultsDepth, // Used in JSON parsing
-  // Ethernet MAC address is found on sticker on Ethernet shield or board:
-  mac[] = { 0x90, 0xA2, 0xDA, 0x00, 0xE3, 0x38 };
+sleepPos = 0, // Current "sleep throb" table position
+resultsDepth, // Used in JSON parsing
+// Ethernet MAC address is found on sticker on Ethernet shield or board:
+mac[] = { 
+  0x90, 0xA2, 0xDA, 0x00, 0xE3, 0x38 };
 IPAddress
-  ip(192,168,1,90); // Fallback address -- code will try DHCP first
+ip(192,168,1,90); // Fallback address -- code will try DHCP first
 EthernetClient
-  client;
+client;
 char
-  *serverName  = "search.twitter.com",
-  // queryString can be any valid Twitter API search string, including
-  // boolean operators.  See https://dev.twitter.com/docs/using-search
-  // for options and syntax.  Funny characters do NOT need to be URL
-  // encoded here -- the sketch takes care of that.
-  *queryString = "#realejo OR #curtocafe",
-  lastId[21],    // 18446744073709551615\0 (64-bit maxint as string)
-  timeStamp[32], // WWW, DD MMM YYYY HH:MM:SS +XXXX\0
-  fromUser[16],  // Max username length (15) + \0
-  msgText[141],  // Max tweet length (140) + \0
-  name[11],      // Temp space for name:value parsing
-  value[141],    // Temp space for name:value parsing
-  *mensagemFinal = "Saiba mais sobre o realejo de ideias em http://goo.gl/G3iJA";
+*serverName  = "search.twitter.com",
+// queryString can be any valid Twitter API search string, including
+// boolean operators.  See https://dev.twitter.com/docs/using-search
+// for options and syntax.  Funny characters do NOT need to be URL
+// encoded here -- the sketch takes care of that.
+*queryString = "#realejo OR @realejodeideias OR #curtocafe OR @curtocafe OR #molequedeideias OR @molequedeideias OR @moleque OR #meccarede",
+lastId[21],    // 18446744073709551615\0 (64-bit maxint as string)
+timeStamp[32], // WWW, DD MMM YYYY HH:MM:SS +XXXX\0
+fromUser[16],  // Max username length (15) + \0
+msgText[141],  // Max tweet length (140) + \0
+name[11],      // Temp space for name:value parsing
+value[141],    // Temp space for name:value parsing
+*mensagemFinal = "Saiba mais sobre o realejo de   ideias em http://bit.ly/realejo";
 PROGMEM byte
-  sleepTab[] = { // "Sleep throb" brightness table (reverse for second half)
-      0,   0,   0,   0,   0,   0,   0,   0,   0,   1,
-      1,   1,   2,   3,   4,   5,   6,   8,  10,  13,
-     15,  19,  22,  26,  31,  36,  41,  47,  54,  61,
-     68,  76,  84,  92, 101, 110, 120, 129, 139, 148,
-    158, 167, 177, 186, 194, 203, 211, 218, 225, 232,
-    237, 242, 246, 250, 252, 254, 255 };
+sleepTab[] = { // "Sleep throb" brightness table (reverse for second half)
+  0,   0,   0,   0,   0,   0,   0,   0,   0,   1,
+  1,   1,   2,   3,   4,   5,   6,   8,  10,  13,
+  15,  19,  22,  26,  31,  36,  41,  47,  54,  61,
+  68,  76,  84,  92, 101, 110, 120, 129, 139, 148,
+  158, 167, 177, 186, 194, 203, 211, 218, 225, 232,
+  237, 242, 246, 250, 252, 254, 255 };
 
 // Function prototypes -------------------------------------------------------
 
 boolean
-  jsonParse(int, byte),
-  readString(char *, int);
+jsonParse(int, byte),
+readString(char *, int);
 int
-  unidecode(byte),
-  timedRead(void);
+unidecode(byte),
+timedRead(void);
 
 // ---------------------------------------------------------------------------
 
@@ -118,6 +121,8 @@ void setup() {
   memset(msgText  , 0, sizeof(msgText));
   memset(name     , 0, sizeof(name));
   memset(value    , 0, sizeof(value));
+  
+  pinMode(LED, OUTPUT);
 }
 
 // ---------------------------------------------------------------------------
