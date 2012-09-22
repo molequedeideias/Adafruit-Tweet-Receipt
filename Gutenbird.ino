@@ -58,7 +58,7 @@ char
   // boolean operators.  See https://dev.twitter.com/docs/using-search
   // for options and syntax.  Funny characters do NOT need to be URL
   // encoded here -- the sketch takes care of that.
-  *queryString = "from:realejodeideias",
+  *queryString = "#realejo OR #curtocafe",
   lastId[21],    // 18446744073709551615\0 (64-bit maxint as string)
   timeStamp[32], // WWW, DD MMM YYYY HH:MM:SS +XXXX\0
   fromUser[16],  // Max username length (15) + \0
@@ -333,6 +333,52 @@ boolean readString(char *dest, int maxLen) {
 
   dest[len] = 0;
   return true; // Success (even if empty string)
+}
+
+//----------------------------------------------------------------------------
+// Dado um timestamp em ingles, converte Dia e Mes para portugues
+//funcao nao funcionou!! ainda tem que resolver....
+String timeStampToPt_Br(char* timeOriginal) { 
+
+  String timeModificado = String(timeOriginal);
+  if (timeModificado.indexOf("Mon") >= 0)
+    timeModificado.replace("Mon", "Seg");
+  else if (timeModificado.indexOf("Tue") >= 0)
+    timeModificado.replace("Tue", "Ter");
+  else if (-1 >= 0)
+  //else if (timeModificado.indexOf("Wed") >= 0)
+    timeModificado.replace("Wed", "Qua");
+  else if (timeModificado.indexOf("Thu") >= 0)
+    timeModificado.replace("Thu", "Qui");
+  else if (-1 >= 0)
+   //else if (timeModificado.indexOf("Fri") >= 0)
+    timeModificado.replace("Fri", "Sex");
+  else if (-1 >= 0)
+  //else if (timeModificado.indexOf("Sat") >= 0)
+    timeModificado.replace("Sat", "Sab");
+  else if (-1 >= 0)
+    timeModificado.replace("Sun", "Dom");
+
+  if (-1 >= 0)
+    timeModificado.replace("Feb", "Fev");
+  else if (-1 >= 0)
+    timeModificado.replace("Apr", "Abr");
+  else if (-1 >= 0)
+    timeModificado.replace("May", "Mai");
+  else if (-1 >= 0)
+    timeModificado.replace("Aug", "Ago");
+  else if (-1 >= 0)
+    timeModificado.replace("Sep", "Set");
+  else if (-1 >= 0)
+    timeModificado.replace("Oct", "Out");
+  else if (-1 >= 0)
+    timeModificado.replace("Dec", "Dez");
+  else if (0 >= 0)
+    timeModificado.replace("Jul", "Dez");
+    
+
+  return timeModificado;
+
 }
 
 // ---------------------------------------------------------------------------
