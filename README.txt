@@ -1,3 +1,6 @@
+Code for "Realejo de Ideias"
+Based in code originally published by Adafruit as asserted below:
+--------------------------------------------------------------------
 Gutenbird demo sketch: monitors one or more Twitter accounts
 for changes, displaying updates on attached thermal printer.
 Written by Adafruit Industries.  MIT license.
@@ -6,6 +9,7 @@ Written by Adafruit Industries.  MIT license.
 Designed for the Adafruit Internet of Things printer
 Pick one up at http://www.adafruit.com/products/717 !
 ******************************************************
+--------------------------------------------------------------------
 
 REQUIRES ARDUINO IDE 1.0 OR LATER -- Back-porting is not likely to
 occur, as the code is deeply dependent on the Stream class, etc.
@@ -25,3 +29,8 @@ http://www.adafruit.com/products/201 Arduino Uno
 http://www.adafruit.com/products/201 Ethernet Shield
 http://www.adafruit.com/products/597 Mini Thermal Receipt Printer
 http://www.adafruit.com/products/600 Printer starter pack
+--------------------------------------------------------------------
+VERSION 1.0
+- Localization to Brazilian portuguese
+- Code supporting LED when tweet arrives
+- Support for different hashtags and twitter accounts
