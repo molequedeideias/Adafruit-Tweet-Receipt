@@ -27,61 +27,65 @@ http://www.adafruit.com/products/600 Printer starter pack
 #include <Adafruit_Thermal.h>
 #include <SoftwareSerial.h>
 
-// Global stuff --------------------------------------------------------------
+#define LED 19
 
+// Global stuff --------------------------------------------------------------
+boolean debug     = false;
+String jsonString = "";
 const int
-  led_pin         = 3,           // To status LED (hardware PWM pin)
-  // Pin 4 is skipped -- this is the Card Select line for Arduino Ethernet!
-  printer_RX_Pin  = 5,           // Printer connection: green wire
-  printer_TX_Pin  = 6,           // Printer connection: yellow wire
-  printer_Ground  = 7,           // Printer connection: black wire
-  maxTweets       = 5;           // Limit tweets printed; avoid runaway output
+led_pin         = 3,           // To status LED (hardware PWM pin)
+// Pin 4 is skipped -- this is the Card Select line for Arduino Ethernet!
+printer_RX_Pin  = 5,           // Printer connection: green wire
+printer_TX_Pin  = 6,           // Printer connection: yellow wire
+printer_Ground  = 7,           // Printer connection: black wire
+maxTweets       = 5;           // Limit tweets printed; avoid runaway output
 const unsigned long              // Time limits, expressed in milliseconds:
-  pollingInterval = 60L * 1000L, // Note: Twitter server will allow 150/hr max
-  connectTimeout  = 15L * 1000L, // Max time to retry server link
-  responseTimeout = 15L * 1000L; // Max time to wait for data from server
+pollingInterval = 60L * 1000L, // Note: Twitter server will allow 150/hr max
+connectTimeout  = 15L * 1000L, // Max time to retry server link
+responseTimeout = 15L * 1000L; // Max time to wait for data from server
 Adafruit_Thermal
-  printer(printer_RX_Pin, printer_TX_Pin);
+printer(printer_RX_Pin, printer_TX_Pin);
 byte
-  sleepPos = 0, // Current "sleep throb" table position
-  resultsDepth, // Used in JSON parsing
-  // Ethernet MAC address is found on sticker on Ethernet shield or board:
-  mac[] = { 0x90, 0xA2, 0xDA, 0x00, 0xE3, 0x38 };
+sleepPos = 0, // Current "sleep throb" table position
+resultsDepth, // Used in JSON parsing
+// Ethernet MAC address is found on sticker on Ethernet shield or board:
+mac[] = { 
+  0x90, 0xA2, 0xDA, 0x00, 0xE3, 0x38 };
 IPAddress
-  ip(192,168,1,90); // Fallback address -- code will try DHCP first
+ip(192,168,1,90); // Fallback address -- code will try DHCP first
 EthernetClient
-  client;
+client;
 char
-  *serverName  = "search.twitter.com",
-  // queryString can be any valid Twitter API search string, including
-  // boolean operators.  See https://dev.twitter.com/docs/using-search
-  // for options and syntax.  Funny characters do NOT need to be URL
-  // encoded here -- the sketch takes care of that.
-  *queryString = "from:realejodeideias",
-  lastId[21],    // 18446744073709551615\0 (64-bit maxint as string)
-  timeStamp[32], // WWW, DD MMM YYYY HH:MM:SS +XXXX\0
-  fromUser[16],  // Max username length (15) + \0
-  msgText[141],  // Max tweet length (140) + \0
-  name[11],      // Temp space for name:value parsing
-  value[141],    // Temp space for name:value parsing
-  *mensagemFinal = "Saiba mais sobre o realejo de ideias em http://goo.gl/G3iJA";
+*serverName  = "search.twitter.com",
+// queryString can be any valid Twitter API search string, including
+// boolean operators.  See https://dev.twitter.com/docs/using-search
+// for options and syntax.  Funny characters do NOT need to be URL
+// encoded here -- the sketch takes care of that.
+*queryString = "#realejo OR @realejodeideias OR #curtocafe OR @curtocafe OR #molequedeideias OR @molequedeideias OR @moleque OR #meccarede",
+lastId[21],    // 18446744073709551615\0 (64-bit maxint as string)
+timeStamp[32], // WWW, DD MMM YYYY HH:MM:SS +XXXX\0
+fromUser[16],  // Max username length (15) + \0
+msgText[141],  // Max tweet length (140) + \0
+name[11],      // Temp space for name:value parsing
+value[141],    // Temp space for name:value parsing
+*mensagemFinal = "Saiba mais sobre o realejo de   ideias em http://bit.ly/realejo";  //os espa'os extras no meio da string para quebrar a linha corretamente
 PROGMEM byte
-  sleepTab[] = { // "Sleep throb" brightness table (reverse for second half)
-      0,   0,   0,   0,   0,   0,   0,   0,   0,   1,
-      1,   1,   2,   3,   4,   5,   6,   8,  10,  13,
-     15,  19,  22,  26,  31,  36,  41,  47,  54,  61,
-     68,  76,  84,  92, 101, 110, 120, 129, 139, 148,
-    158, 167, 177, 186, 194, 203, 211, 218, 225, 232,
-    237, 242, 246, 250, 252, 254, 255 };
+sleepTab[] = { // "Sleep throb" brightness table (reverse for second half)
+  0,   0,   0,   0,   0,   0,   0,   0,   0,   1,
+  1,   1,   2,   3,   4,   5,   6,   8,  10,  13,
+  15,  19,  22,  26,  31,  36,  41,  47,  54,  61,
+  68,  76,  84,  92, 101, 110, 120, 129, 139, 148,
+  158, 167, 177, 186, 194, 203, 211, 218, 225, 232,
+  237, 242, 246, 250, 252, 254, 255 };
 
 // Function prototypes -------------------------------------------------------
 
 boolean
-  jsonParse(int, byte),
-  readString(char *, int);
+jsonParse(int, byte),
+readString(char *, int);
 int
-  unidecode(byte),
-  timedRead(void);
+unidecode(byte),
+timedRead(void);
 
 // ---------------------------------------------------------------------------
 
@@ -117,6 +121,8 @@ void setup() {
   memset(msgText  , 0, sizeof(msgText));
   memset(name     , 0, sizeof(name));
   memset(value    , 0, sizeof(value));
+  
+  pinMode(LED, OUTPUT);
 }
 
 // ---------------------------------------------------------------------------
@@ -134,6 +140,8 @@ void loop() {
   analogWrite(led_pin, 255);
 
   // Attempt server connection, with timeout...
+ 
+
   Serial.print("Conectando ao servidor...");
   while((client.connect(serverName, 80) == false) &&
     ((millis() - startTime) < connectTimeout));
@@ -172,6 +180,7 @@ void loop() {
     t = millis();
     while((!client.available()) && ((millis() - t) < responseTimeout));
     if(client.available()) { // Response received?
+    
       // Could add HTTP response header parsing here (400, etc.)
       if(client.find("\r\n\r\n")) { // Skip HTTP response header
         Serial.println("OK\r\nProcessando resultados...");
@@ -207,24 +216,26 @@ void loop() {
 boolean jsonParse(int depth, byte endChar) {
   int     c, i;
   boolean readName = true;
-
+ 
   for(;;) {
     while(isspace(c = timedRead())); // Scan past whitespace
     if(c < 0)        return false;   // Timeout
     if(c == endChar) return true;    // EOD
-
+    
     if(c == '{') { // Object follows
       if(!jsonParse(depth + 1, '}')) return false;
       if(!depth)                     return true; // End of file
       if(depth == resultsDepth) { // End of object in results list
 
         // Output to printer
+        digitalWrite(LED, HIGH);
+
         printer.wake();
         printer.inverseOn();
         printer.write(' ');
-        printer.print("Enviado por: ");
+        printer.print("Enviado por: @");// sao 14 caracteres
         printer.print(fromUser);
-        for(i=strlen(fromUser); i<31; i++) printer.write(' ');
+        for(i=strlen(fromUser)+14; i<31; i++) printer.write(' ');
         printer.inverseOff();
         printer.underlineOn();
         printer.print(timeStamp);
@@ -238,8 +249,15 @@ boolean jsonParse(int depth, byte endChar) {
         printer.println(mensagemFinal);
         printer.feed(3);
         printer.sleep();
-
+        delay(60000);
+        digitalWrite(LED, LOW);
         // Dump to serial console as well
+        if (debug) {
+          Serial.println("depth: "+depth);
+          Serial.print("Json: ");
+          Serial.println(jsonString);
+          jsonString = "";
+        }
         Serial.print("Usuario: ");
         Serial.println(fromUser);
         Serial.print("Texto: ");
@@ -310,7 +328,10 @@ boolean readString(char *dest, int maxLen) {
       else if(c == 'U') c = unidecode(8);
       // else c is unaltered -- an escaped char such as \ or "
     } // else c is a normal unescaped char
-
+    if (debug) { 
+    //Serial.print(c + " ");
+    jsonString+= (unidecode(c) + " ");
+    }
     if(c < 0) return false; // Timeout
 
     // In order to properly position the client stream at the end of
@@ -321,6 +342,52 @@ boolean readString(char *dest, int maxLen) {
 
   dest[len] = 0;
   return true; // Success (even if empty string)
+}
+
+//----------------------------------------------------------------------------
+// Dado um timestamp em ingles, converte Dia e Mes para portugues
+//funcao nao funcionou!! ainda tem que resolver....
+String timeStampToPt_Br(char* timeOriginal) { 
+
+  String timeModificado = String(timeOriginal);
+  if (timeModificado.indexOf("Mon") >= 0)
+    timeModificado.replace("Mon", "Seg");
+  else if (timeModificado.indexOf("Tue") >= 0)
+    timeModificado.replace("Tue", "Ter");
+  else if (-1 >= 0)
+  //else if (timeModificado.indexOf("Wed") >= 0)
+    timeModificado.replace("Wed", "Qua");
+  else if (timeModificado.indexOf("Thu") >= 0)
+    timeModificado.replace("Thu", "Qui");
+  else if (-1 >= 0)
+   //else if (timeModificado.indexOf("Fri") >= 0)
+    timeModificado.replace("Fri", "Sex");
+  else if (-1 >= 0)
+  //else if (timeModificado.indexOf("Sat") >= 0)
+    timeModificado.replace("Sat", "Sab");
+  else if (-1 >= 0)
+    timeModificado.replace("Sun", "Dom");
+
+  if (-1 >= 0)
+    timeModificado.replace("Feb", "Fev");
+  else if (-1 >= 0)
+    timeModificado.replace("Apr", "Abr");
+  else if (-1 >= 0)
+    timeModificado.replace("May", "Mai");
+  else if (-1 >= 0)
+    timeModificado.replace("Aug", "Ago");
+  else if (-1 >= 0)
+    timeModificado.replace("Sep", "Set");
+  else if (-1 >= 0)
+    timeModificado.replace("Oct", "Out");
+  else if (-1 >= 0)
+    timeModificado.replace("Dec", "Dez");
+  else if (0 >= 0)
+    timeModificado.replace("Jul", "Dez");
+    
+
+  return timeModificado;
+
 }
 
 // ---------------------------------------------------------------------------
@@ -365,6 +432,8 @@ int timedRead(void) {
 
   return client.read();  // -1 on timeout
 }
+
+
 
 // ---------------------------------------------------------------------------
 
