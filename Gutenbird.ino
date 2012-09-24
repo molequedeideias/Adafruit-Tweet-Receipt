@@ -140,6 +140,8 @@ void loop() {
   analogWrite(led_pin, 255);
 
   // Attempt server connection, with timeout...
+ 
+
   Serial.print("Conectando ao servidor...");
   while((client.connect(serverName, 80) == false) &&
     ((millis() - startTime) < connectTimeout));
@@ -226,13 +228,14 @@ boolean jsonParse(int depth, byte endChar) {
       if(depth == resultsDepth) { // End of object in results list
 
         // Output to printer
-        
+        digitalWrite(LED, HIGH);
+
         printer.wake();
         printer.inverseOn();
         printer.write(' ');
-        printer.print("Enviado por: ");// sao 13 caracteres
+        printer.print("Enviado por: @");// sao 14 caracteres
         printer.print(fromUser);
-        for(i=strlen(fromUser)+13; i<31; i++) printer.write(' ');
+        for(i=strlen(fromUser)+14; i<31; i++) printer.write(' ');
         printer.inverseOff();
         printer.underlineOn();
         printer.print(timeStamp);
@@ -246,7 +249,8 @@ boolean jsonParse(int depth, byte endChar) {
         printer.println(mensagemFinal);
         printer.feed(3);
         printer.sleep();
-
+        delay(60000);
+        digitalWrite(LED, LOW);
         // Dump to serial console as well
         if (debug) {
           Serial.println("depth: "+depth);
