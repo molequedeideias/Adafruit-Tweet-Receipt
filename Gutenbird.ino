@@ -49,10 +49,13 @@ byte
 sleepPos = 0, // Current "sleep throb" table position
 resultsDepth, // Used in JSON parsing
 // Ethernet MAC address is found on sticker on Ethernet shield or board:
-mac[] = { 
+mac[] = {
   0x90, 0xA2, 0xDA, 0x00, 0xE3, 0x38 };
 IPAddress
-ip(192,168,1,90); // Fallback address -- code will try DHCP first
+ip(192,168,254,1); // Fallback address -- code will try DHCP first
+byte googleDns[] = { 8, 8, 8, 8 };
+byte gateway[] = { 192, 168, 254, 254 };
+byte subnet[] = { 255, 255, 255, 0 };
 EthernetClient
 client;
 char
@@ -106,13 +109,8 @@ void setup() {
 
   // Initialize Ethernet connection.  Request dynamic
   // IP address, fall back on fixed IP if that fails:
-  Serial.print("Inicializando Ethernet...");
-  if(Ethernet.begin(mac)) {
-    Serial.println("OK");
-  } else {
-    Serial.print("\r\nSem resposta DHCP response, usando IP estatico.");
-    Ethernet.begin(mac, ip);
-  }
+    Serial.print("\r\nConectando a internet...");
+    Ethernet.begin(mac, ip, googleDns, gateway, subnet);
 
   // Clear all string data
   memset(lastId   , 0, sizeof(lastId));
@@ -121,7 +119,7 @@ void setup() {
   memset(msgText  , 0, sizeof(msgText));
   memset(name     , 0, sizeof(name));
   memset(value    , 0, sizeof(value));
-  
+
   pinMode(LED, OUTPUT);
 }
 
@@ -140,7 +138,7 @@ void loop() {
   analogWrite(led_pin, 255);
 
   // Attempt server connection, with timeout...
- 
+
 
   Serial.print("Conectando ao servidor...");
   while((client.connect(serverName, 80) == false) &&
@@ -180,7 +178,7 @@ void loop() {
     t = millis();
     while((!client.available()) && ((millis() - t) < responseTimeout));
     if(client.available()) { // Response received?
-    
+
       // Could add HTTP response header parsing here (400, etc.)
       if(client.find("\r\n\r\n")) { // Skip HTTP response header
         Serial.println("OK\r\nProcessando resultados...");
@@ -216,12 +214,12 @@ void loop() {
 boolean jsonParse(int depth, byte endChar) {
   int     c, i;
   boolean readName = true;
- 
+
   for(;;) {
     while(isspace(c = timedRead())); // Scan past whitespace
     if(c < 0)        return false;   // Timeout
     if(c == endChar) return true;    // EOD
-    
+
     if(c == '{') { // Object follows
       if(!jsonParse(depth + 1, '}')) return false;
       if(!depth)                     return true; // End of file
@@ -328,7 +326,7 @@ boolean readString(char *dest, int maxLen) {
       else if(c == 'U') c = unidecode(8);
       // else c is unaltered -- an escaped char such as \ or "
     } // else c is a normal unescaped char
-    if (debug) { 
+    if (debug) {
     //Serial.print(c + " ");
     jsonString+= (unidecode(c) + " ");
     }
@@ -347,7 +345,7 @@ boolean readString(char *dest, int maxLen) {
 //----------------------------------------------------------------------------
 // Dado um timestamp em ingles, converte Dia e Mes para portugues
 //funcao nao funcionou!! ainda tem que resolver....
-String timeStampToPt_Br(char* timeOriginal) { 
+String timeStampToPt_Br(char* timeOriginal) {
 
   String timeModificado = String(timeOriginal);
   if (timeModificado.indexOf("Mon") >= 0)
@@ -384,7 +382,7 @@ String timeStampToPt_Br(char* timeOriginal) {
     timeModificado.replace("Dec", "Dez");
   else if (0 >= 0)
     timeModificado.replace("Jul", "Dez");
-    
+
 
   return timeModificado;
 
@@ -446,4 +444,5 @@ ISR(TIMER1_OVF_vect, ISR_NOBLOCK) {
   if(++sleepPos >= ((sizeof(sleepTab) - 1) * 2)) sleepPos = 0; // Roll over
   TIFR1 |= TOV1; // Clear Timer1 interrupt flag
 }
+
 
